@@ -27,8 +27,9 @@ var (
 
 	conf = struct {
 		Remote struct {
-			Type     string `default:"sower" required:"true" usage:"option: sower/trojan/socks5"`
+			Type     string `default:"sower" required:"true" usage:"option: sower/trojan/socks5/sshd"`
 			Addr     string `required:"true" usage:"proxy address, eg: proxy.com/127.0.0.1:7890"`
+			User     string `usage:"remote proxy user"`
 			Password string `usage:"remote proxy password"`
 		}
 

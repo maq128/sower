@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,32 +16,51 @@ import (
 	"github.com/wweir/sower/transport"
 	"github.com/wweir/sower/transport/socks5"
 	"github.com/wweir/sower/transport/sower"
+	"github.com/wweir/sower/transport/ssh"
 	"github.com/wweir/sower/transport/trojan"
+
+	crypto_ssh "golang.org/x/crypto/ssh"
 )
 
 func GenProxyDial(proxyType, proxyHost, proxyPassword string) router.ProxyDialFn {
 	var proxy transport.Transport
-	var dialFn func() (net.Conn, error)
+	var dialFn func(host string, port uint16) (net.Conn, error)
 
 	switch conf.Remote.Type {
 	case "sower":
 		proxy = sower.New(conf.Remote.Password)
 		tlsCfg := &tls.Config{}
-		dialFn = func() (net.Conn, error) {
+		dialFn = func(host string, port uint16) (net.Conn, error) {
 			return tls.Dial("tcp", net.JoinHostPort(proxyHost, "443"), tlsCfg)
 		}
 
 	case "trojan":
 		proxy = trojan.New(conf.Remote.Password)
 		tlsCfg := &tls.Config{}
-		dialFn = func() (net.Conn, error) {
+		dialFn = func(host string, port uint16) (net.Conn, error) {
 			return tls.Dial("tcp", net.JoinHostPort(proxyHost, "443"), tlsCfg)
 		}
 
 	case "socks5":
 		proxy = socks5.New()
-		dialFn = func() (net.Conn, error) {
+		dialFn = func(host string, port uint16) (net.Conn, error) {
 			return net.Dial("tcp", proxyHost)
+		}
+
+	case "sshd":
+		config := crypto_ssh.ClientConfig{
+			User:            conf.Remote.User,
+			Auth:            []crypto_ssh.AuthMethod{crypto_ssh.Password(conf.Remote.Password)},
+			HostKeyCallback: crypto_ssh.InsecureIgnoreHostKey(),
+		}
+		sshClient, err := crypto_ssh.Dial("tcp", proxyHost, &config)
+		if err != nil {
+			log.Fatal().Msg("connect to sshd failed")
+		}
+
+		proxy = ssh.New()
+		dialFn = func(host string, port uint16) (net.Conn, error) {
+			return sshClient.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(int(port))))
 		}
 
 	default:
@@ -54,7 +74,7 @@ func GenProxyDial(proxyType, proxyHost, proxyPassword string) router.ProxyDialFn
 			return nil, errors.Errorf("invalid addr(%s:%d)", host, port)
 		}
 
-		conn, err := dialFn()
+		conn, err := dialFn(host, port)
 		if err != nil {
 			return nil, err
 		}
