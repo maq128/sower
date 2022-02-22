@@ -106,6 +106,10 @@ func ServeHTTP(ln net.Listener, r *router.Router) {
 		return
 	}
 
+	log.Info().
+		Str("host", req.Host).
+		Msg("ServeHTTP")
+
 	rc, err := r.ProxyDial("tcp", req.Host, 80)
 	if err != nil {
 		log.Error().Err(err).
@@ -143,6 +147,10 @@ func ServeHTTPS(ln net.Listener, r *router.Router) {
 			return nil, nil
 		},
 	}).Handshake()
+
+	log.Info().
+		Str("domain", domain).
+		Msg("ServeHTTPS")
 
 	rc, err := r.ProxyDial("tcp", domain, 443)
 	if err != nil {

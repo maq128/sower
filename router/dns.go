@@ -16,6 +16,11 @@ func (r *Router) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 	}
 
 	domain := req.Question[0].Name
+
+	log.Info().
+		Str("domain", domain).
+		Msg("ServeDNS")
+
 	// 1. rule_based( block > direct > proxy )
 	switch {
 	case r.blockRule.Match(domain):
