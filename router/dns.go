@@ -17,21 +17,31 @@ func (r *Router) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 
 	domain := req.Question[0].Name
 
-	log.Info().
-		Str("domain", domain).
-		Msg("ServeDNS")
-
 	// 1. rule_based( block > direct > proxy )
 	switch {
 	case r.blockRule.Match(domain):
 		_ = w.WriteMsg(r.dnsFail(req, dns.RcodeNameError))
+		log.Info().
+			Str("-X-", domain).
+			Msg("ServeDNS")
 		return
 
 	case r.directRule.Match(domain):
+		log.Info().
+			Str("---", domain).
+			Msg("ServeDNS")
 
 	case r.proxyRule.Match(domain):
 		_ = w.WriteMsg(r.dnsProxyA(domain, r.dns.serveIP, req))
+		log.Info().
+			Str(">>>", domain).
+			Msg("ServeDNS")
 		return
+
+	default:
+		log.Info().
+			Str("...", domain).
+			Msg("ServeDNS")
 	}
 
 	// 2. direct with cache, do not fallback to proxy to avoid side-effect
