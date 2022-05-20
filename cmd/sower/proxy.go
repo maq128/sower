@@ -60,7 +60,17 @@ func GenProxyDial(proxyType, proxyHost, proxyPassword string) router.ProxyDialFn
 
 		proxy = ssh.New()
 		dialFn = func(host string, port uint16) (net.Conn, error) {
-			return sshClient.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(int(port))))
+			conn, err := sshClient.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(int(port))))
+			if err != nil {
+				log.Error().Err(err).Msg("sshClient.Dial failed, re-connect...")
+				sshClient, err = crypto_ssh.Dial("tcp", proxyHost, &config)
+				if err != nil {
+					log.Fatal().Msg("re-connect to sshd failed")
+				} else {
+					conn, err = sshClient.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(int(port))))
+				}
+			}
+			return conn, err
 		}
 
 	default:
