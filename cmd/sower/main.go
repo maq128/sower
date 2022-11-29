@@ -160,6 +160,10 @@ func main() {
 		Int("proxyRule", len(conf.Router.Proxy.Rules)).
 		Int("countryRule", len(conf.Router.Country.Rules)).
 		Msg("Loaded rules, proxy started")
+	log.Info().Msg("-X- : blockRule matched")
+	log.Info().Msg("--- : directRule matched")
+	log.Info().Msg(">>> : proxyRule matched")
+	log.Info().Msg("... : no rule matched")
 	runtime.GC()
 	select {}
 }

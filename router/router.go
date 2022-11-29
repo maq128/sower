@@ -64,6 +64,9 @@ func (r *Router) SetDirectRules(directList []string) {
 	r.directRule = suffixtree.NewNodeFromRules(directList...)
 }
 func (r *Router) SetProxyRules(proxyList []string) {
+	// for i, p := range proxyList {
+	// 	fmt.Println("proxyList:", i, p)
+	// }
 	r.proxyRule = suffixtree.NewNodeFromRules(proxyList...)
 }
 func (r *Router) SetCountryCIDRs(directCIDRs []string) {
